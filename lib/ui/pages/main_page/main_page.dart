@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:money_traffic_app/ui/pages/alert_dialog/expenses_alert.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:money_traffic_app/bloc/theme_bloc.dart';
+import 'package:money_traffic_app/ui/alert_dialog/expenses_alert.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:money_traffic_app/ui/pages/main_page/bloc/expenses_bloc.dart';
+import 'package:money_traffic_app/services/local_data_base/entity/expenses.dart';
+
+import 'package:provider/src/provider.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key, required this.title}) : super(key: key);
@@ -11,12 +18,26 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _controllerForExpans = TextEditingController();
+  final TextEditingController _controllerForCategory = TextEditingController();
+  late ExpensesBloc _expensesBloc;
+  List<Expenses> listExpenses = [];
+  int sum = 0;
 
-  void _incrementCounter() {
+  @override
+  void initState() {
+    _expensesBloc = ExpensesBloc();
+    _expensesBloc.add(GetExpenses());
+    super.initState();
+  }
+
+  void _inputExpenses() {
     CustomAlertDialog.expensesAlertDialog(
-        context: context, controller: _controller);
+      expensesBloc: _expensesBloc,
+      context: context,
+      controllerForExpans: _controllerForExpans,
+      controllerForCategory: _controllerForCategory,
+    );
   }
 
   @override
@@ -24,23 +45,67 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Hive.box('theme').get('theme') == 'dark'
+                  ? context
+                      .read<ThemeBloc>()
+                      .add(ChangeThemeEvent(theme: 'light'))
+                  : context
+                      .read<ThemeBloc>()
+                      .add(ChangeThemeEvent(theme: 'dark'));
+            },
+            icon: const Icon(Icons.mode_night_outlined),
+          )
+        ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+      body: BlocProvider(
+        create: (context) => _expensesBloc,
+        child: BlocConsumer<ExpensesBloc, ExpensesState>(
+          listener: (context, state) {
+            if (state is ExpensesLoadedState) {
+              listExpenses = state.listExpenses;
+              sum = state.sum;
+            }
+          },
+          builder: (context, state) {
+            return Center(
+                child: Column(
+              children: [
+                Text('Сумма: $sum сом'),
+                ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: listExpenses.length,
+                    itemBuilder: (context, index) => Card(
+                          child: ListTile(
+                            title: Text(
+                                'Категория: ${listExpenses[index].category}'),
+                            leading: Text('Цена: ${listExpenses[index].cost}'),
+                            trailing:
+                                Text('Дата: ${listExpenses[index].date.day}'),
+                          ),
+                        )),
+              ],
+            ));
+          },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            onPressed: _inputExpenses,
+            tooltip: 'Increment',
+            child: const Icon(Icons.delete),
+          ),
+          const SizedBox(width: 10),
+          FloatingActionButton(
+            onPressed: _inputExpenses,
+            tooltip: 'Increment',
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
