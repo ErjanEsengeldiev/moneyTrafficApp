@@ -38,7 +38,6 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
       for (var i = 0; i < listExpenses.length; i++) {
         sum += listExpenses[i].cost;
       }
-      print(sum);
       emit(ExpensesLoadedState(
         listExpenses: listExpenses,
         sum: sum,

@@ -3,11 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:money_traffic_app/bloc/theme_bloc.dart';
 import 'package:money_traffic_app/ui/pages/main_page/main_page.dart';
+import 'package:money_traffic_app/ui/pages/search/search_page.dart';
 
 void main() async {
   await Hive.initFlutter();
   await Hive.openBox('theme');
-  
+
   Future<void> _checkHiveTheme() async {
     if (Hive.box('theme').isEmpty) {
       await Hive.box('theme').put('theme', 'dark');
@@ -58,7 +59,10 @@ class _MyAppState extends State<MyApp> {
         builder: (context, state) => MaterialApp(
           title: 'Flutter Demo',
           theme: themeFromHive,
-          home: const MyHomePage(title: 'Flutter Demo Home Page'),
+          routes: {
+            '/': (context) => const MyHomePage(),
+          },
+          initialRoute: '/',
         ),
       ),
     );
