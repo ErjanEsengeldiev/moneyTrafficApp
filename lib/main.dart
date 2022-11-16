@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:money_traffic_app/bloc/theme_bloc.dart';
 import 'package:money_traffic_app/ui/pages/main_page/main_page.dart';
-import 'package:money_traffic_app/ui/pages/search/search_page.dart';
 
 void main() async {
   await Hive.initFlutter();

@@ -13,8 +13,8 @@ class CustomAlertDialog {
 
     List<String> _listOfCommonCategory = ['Транспорт', 'Еда', 'Личный быт'];
 
-    String? errorTextValues = null;
-    String? errorTextCategory = null;
+    String? errorTextValues;
+    String? errorTextCategory;
 
     showDialog(
         context: context,
