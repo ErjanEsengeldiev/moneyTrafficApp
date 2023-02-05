@@ -1,10 +1,13 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:money_traffic_app/bloc/theme_bloc.dart';
-import 'package:money_traffic_app/ui/alert_dialog/expenses_alert.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:money_traffic_app/ui/pages/main_page/bloc/expenses_bloc.dart';
+import 'dart:math';
+import 'package:money_traffic_app/bloc/theme_bloc.dart';
+import 'package:money_traffic_app/init/lang/locale_keys.g.dart';
 import 'package:money_traffic_app/services/local_data_base/entity/expenses.dart';
+import 'package:money_traffic_app/ui/alert_dialog/expenses_alert.dart';
+import 'package:money_traffic_app/ui/pages/main_page/bloc/expenses_bloc.dart';
 import 'package:money_traffic_app/ui/pages/search/search_page.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -26,7 +29,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     _expensesBloc = ExpensesBloc();
-    _expensesBloc.add(GetExpenses());
+    _expensesBloc.add(GetExpenses(date: DateTime.now()));
     super.initState();
   }
 
@@ -45,19 +48,58 @@ class _MyHomePageState extends State<MyHomePage> {
         appBar: AppBar(
           bottom: const TabBar(
             tabs: [
-              Tab(icon: Text('все')),
+              Tab(icon: Icon(Icons.show_chart_sharp)),
               Tab(icon: Icon(Icons.fastfood)),
               Tab(icon: Icon(Icons.bus_alert_rounded)),
             ],
           ),
-          title: TextButton(
-            onPressed: () {},
-            child: Text(
-              '${DateTime.now().year}.${DateTime.now().month}.${DateTime.now().day}',
-              style: TextStyle(
-                  fontSize: 30,
-                  color: Theme.of(context).buttonTheme.colorScheme!.onPrimary),
-            ),
+          title: BlocBuilder<ExpensesBloc, ExpensesState>(
+            bloc: _expensesBloc,
+            builder: (context, state) {
+              if (state is ExpensesLoadedState) {
+                return TextButton(
+                  onPressed: () async {
+                    DateTime selectedDate = DateTime.now();
+                    final DateTime? dateFromPicker = await showDatePicker(
+                      context: context,
+                      initialDate: state.date,
+                      firstDate: DateTime(2023, 0),
+                      lastDate: DateTime.now(),
+                    );
+                    selectedDate = dateFromPicker ?? DateTime.now();
+
+                    _expensesBloc.add(GetExpenses(date: selectedDate));
+                  },
+                  child: Row(
+                    children: [
+                      Text(
+                        '${state.date.year}.${state.date.month}.${state.date.day}',
+                        style: TextStyle(
+                          fontSize: 30,
+                          color: Theme.of(context)
+                              .buttonTheme
+                              .colorScheme!
+                              .onBackground,
+                        ),
+                      ),
+                      Transform.rotate(
+                        angle: pi / -2,
+                        child: Icon(
+                          Icons.chevron_left,
+                          size: 35,
+                          color: Theme.of(context)
+                              .buttonTheme
+                              .colorScheme!
+                              .onBackground,
+                        ),
+                      )
+                    ],
+                  ),
+                );
+              } else {
+                return const SizedBox();
+              }
+            },
           ),
           actions: [
             IconButton(
@@ -73,11 +115,43 @@ class _MyHomePageState extends State<MyHomePage> {
               icon: const Icon(Icons.mode_night_outlined),
             ),
             IconButton(
+              onPressed: () async {
+                switch (EasyLocalization.of(context)?.locale.languageCode) {
+                  case 'ru':
+                    await EasyLocalization.of(context)?.setLocale(
+                        const Locale.fromSubtags(languageCode: 'en'));
+                    break;
+                  case 'en':
+                    await EasyLocalization.of(context)?.setLocale(
+                        const Locale.fromSubtags(languageCode: 'ky'));
+                    break;
+                  case 'ky':
+                    await EasyLocalization.of(context)?.setLocale(
+                        const Locale.fromSubtags(languageCode: 'ru'));
+                    break;
+                }
+              },
+              icon: Text(
+                EasyLocalization.of(context)
+                        ?.locale
+                        .languageCode
+                        .toUpperCase() ??
+                    '',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            IconButton(
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
+                Navigator.of(context).push(
+                  MaterialPageRoute(
                     builder: (context) => SearchPage(
-                          listExpenses: listExpenses,
-                        )));
+                      listExpenses: listExpenses,
+                    ),
+                  ),
+                );
               },
               icon: const Icon(Icons.search),
             ),
@@ -87,24 +161,24 @@ class _MyHomePageState extends State<MyHomePage> {
           create: (context) => _expensesBloc,
           child: BlocConsumer<ExpensesBloc, ExpensesState>(
             listener: (context, state) {
+              listExpenses.clear();
               listExpensesForFood.clear();
               listExpensesForTransport.clear();
+
+              sum = 0;
+              sumForFood = 0;
+              sumForTransport = 0;
 
               if (state is ExpensesLoadedState) {
                 listExpenses = state.listExpenses;
                 for (var e in listExpenses) {
-                  sumForFood = state.sum;
-                  e.category == 'Еда' ? listExpensesForFood.add(e) : () {};
-                  for (var element in listExpensesForFood) {
-                    sum += element.cost;
+                  if (e.category == 'Еда') {
+                    listExpensesForFood.add(e);
+                    sumForFood += e.cost;
+                  } else if (e.category == 'Транспорт') {
+                    listExpensesForTransport.add(e);
+                    sumForTransport += e.cost;
                   }
-                }
-                for (var e in listExpenses) {
-                  sumForTransport = state.sum;
-
-                  e.category == 'Транспорт'
-                      ? listExpensesForTransport.add(e)
-                      : () {};
                 }
 
                 sum = state.sum;
@@ -152,6 +226,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
 class _CustomListView extends StatelessWidget {
   final ExpensesBloc expensesBloc;
+  final int sum;
+
+  final List<Expenses> listExpenses;
   const _CustomListView({
     Key? key,
     required this.expensesBloc,
@@ -159,59 +236,47 @@ class _CustomListView extends StatelessWidget {
     required this.listExpenses,
   }) : super(key: key);
 
-  final int sum;
-  final List<Expenses> listExpenses;
-
   @override
   Widget build(BuildContext context) {
-    return Center(
-        child: Column(
+    return Column(
       children: [
-        Text('Сумма: $sum сом'),
-        ListView.builder(
+        Card(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            alignment: Alignment.center,
+            width: MediaQuery.of(context).size.width,
+            child: Text(
+              '${LocaleKeys.sum.tr()}: $sum',
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            physics: const BouncingScrollPhysics(),
             shrinkWrap: true,
-            reverse: true,
             itemCount: listExpenses.length,
             itemBuilder: (context, index) => InkWell(
-                  onLongPress: () async {
-                    Scaffold.of(context).showBottomSheet(
-                      (context) => Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: () async {
-                              final _box =
-                                  await Hive.openBox<Expenses>('expenses');
-                              await _box.deleteAt(index);
-                              expensesBloc.add(GetExpenses());
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Удалить'),
-                          ),
-                          const SizedBox(height: 100, width: 40),
-                          ElevatedButton(
-                            onPressed: () async {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Отменить'),
-                          ),
-                        ],
-                      ),
-                      backgroundColor: Colors.grey,
-                    );
-                  },
-                  child: Card(
-                    child: ListTile(
-                      title: Text('Категория: ${listExpenses[index].category}'),
-                      leading: Text('Цена: ${listExpenses[index].cost}'),
-                      trailing: Text(
-                          'Дата: ${listExpenses[index].date.year}.${listExpenses[index].date.month}.${listExpenses[index].date.day}'),
-                    ),
-                  ),
-                )),
+              onLongPress: () async {
+                CustomAlertDialog.deleteExpensesDialog(
+                  context,
+                  expensesBloc: expensesBloc,
+                  index: index,
+                );
+              },
+              child: Card(
+                child: ListTile(
+                  title: Text(
+                      '${LocaleKeys.category.tr()}: ${listExpenses[index].category}'),
+                  leading: Text(
+                      '${LocaleKeys.price.tr()}: ${listExpenses[index].cost}'),
+                  trailing: Text(
+                      '${LocaleKeys.date.tr()}: ${listExpenses[index].date.year}.${listExpenses[index].date.month}.${listExpenses[index].date.day}'),
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
-    ));
+    );
   }
 }

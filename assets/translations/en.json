@@ -1,0 +1,15 @@
+{
+    "expenses":"Expenses",
+    "sum":"Sum",
+    "category":"Category",
+    "price":"Price",
+    "date":"Date",
+    "search":"Search",
+    "delete":"Delete",
+    "close":"Close",
+    "enterCosts":"Enter costs",
+    "enterCatergory":"Specify a category",
+    "transport":"Transport",
+    "food":"Food"
+    
+}

@@ -1,5 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:money_traffic_app/init/lang/locale_keys.g.dart';
 import 'package:money_traffic_app/services/local_data_base/entity/expenses.dart';
 import 'package:money_traffic_app/ui/pages/search/bloc/search_bloc.dart';
 
@@ -40,33 +42,37 @@ class _SearchPageState extends State<SearchPage> {
               },
               autofocus: true,
               decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  suffixIcon: const Icon(Icons.search),
-                  hintText: 'Поиск'),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                suffixIcon: const Icon(Icons.search),
+                hintText: LocaleKeys.search.tr(),
+              ),
             ),
           ),
           BlocConsumer<SearchBloc, SearchState>(
-              bloc: searchBloc,
-              listener: (context, state) {
-                if (state is SearchingState) {
-                  listExpenses = state.listExpenses;
-                }
-              },
-              builder: (context, state) => Expanded(
-                      child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: listExpenses.length,
-                    itemBuilder: (context, index) => Card(
-                      child: ListTile(
-                        title:
-                            Text('Категория: ${listExpenses[index].category}'),
-                        leading: Text('Цена: ${listExpenses[index].cost}'),
-                        trailing: Text(
-                            'Дата: ${listExpenses[index].date.year}.${listExpenses[index].date.month}.${listExpenses[index].date.day}'),
-                      ),
-                    ),
-                  )))
+            bloc: searchBloc,
+            listener: (context, state) {
+              if (state is SearchingState) {
+                listExpenses = state.listExpenses;
+              }
+            },
+            builder: (context, state) => Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: listExpenses.length,
+                itemBuilder: (context, index) => Card(
+                  child: ListTile(
+                    title: Text(
+                        '${LocaleKeys.category.tr()}: ${listExpenses[index].category}'),
+                    leading: Text(
+                        '${LocaleKeys.price.tr()}: ${listExpenses[index].cost}'),
+                    trailing: Text(
+                        '${LocaleKeys.date.tr()}: ${listExpenses[index].date.year}.${listExpenses[index].date.month}.${listExpenses[index].date.day}'),
+                  ),
+                ),
+              ),
+            ),
+          )
         ],
       ),
     );

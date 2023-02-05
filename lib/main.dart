@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:money_traffic_app/bloc/theme_bloc.dart';
+import 'package:money_traffic_app/init/lang/codegen_loader.g.dart';
+import 'package:money_traffic_app/init/lang/language_manager.dart';
 import 'package:money_traffic_app/ui/pages/main_page/main_page.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
   await Hive.initFlutter();
   await Hive.openBox('theme');
 
@@ -15,7 +20,16 @@ void main() async {
   }
 
   await _checkHiveTheme();
-  runApp(const MyApp());
+  runApp(
+    EasyLocalization(
+        supportedLocales: LanguageManager.instance.supportedLocales,
+        saveLocale: true,
+        startLocale: LanguageManager.instance.ruLocale,
+        fallbackLocale: LanguageManager.instance.supportedLocales.first,
+        assetLoader: const CodegenLoader(),
+        path: 'assets/translations',
+        child: const MyApp()),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -58,6 +72,9 @@ class _MyAppState extends State<MyApp> {
         builder: (context, state) => MaterialApp(
           title: 'Flutter Demo',
           theme: themeFromHive,
+          localizationsDelegates: context.localizationDelegates,
+          supportedLocales: context.supportedLocales,
+          locale: context.locale,
           routes: {
             '/': (context) => const MyHomePage(),
           },
